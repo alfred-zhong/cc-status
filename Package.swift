@@ -8,7 +8,7 @@ let package = Package(
         .executableTarget(
             name: "CCStatus",
             path: "Sources/CCStatus",
-            exclude: ["Info.plist"]
+            exclude: ["Info.plist", "Resources"]
         )
     ]
 )
