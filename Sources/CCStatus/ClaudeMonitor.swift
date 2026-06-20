@@ -94,7 +94,9 @@ class ClaudeMonitor {
 
         do {
             let sessions = try JSONDecoder().decode([ClaudeSession].self, from: data)
-            return .success(sessions)
+            // 过滤掉没有 status 字段的会话（进程已退出）
+            let activeSessions = sessions.filter { $0.status != nil }
+            return .success(activeSessions)
         } catch {
             return .failure(.jsonDecodeError(error.localizedDescription))
         }
