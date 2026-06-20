@@ -4,8 +4,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private let monitor = ClaudeMonitor()
     private var timer: Timer?
+    private var animationTimer: Timer?
+    private var animationStart: Date = Date()
     private var sessions: [ClaudeSession] = []
     private var lastError: String?
+    private var currentState: IconState = .idle
+
+    private enum IconState {
+        case error
+        case empty
+        case blocked
+        case working
+        case idle
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupStatusItem()
@@ -50,27 +61,33 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         let image: NSImage
         let tintColor: NSColor
+        let newState: IconState
 
         if !monitor.isAvailable || lastError != nil {
             // Claude not found or error - 灰色空心
             image = NSImage(systemSymbolName: "circle", accessibilityDescription: "CC Status")!
             tintColor = .systemGray
+            newState = .error
         } else if sessions.isEmpty {
             // No sessions - 灰色空心
             image = NSImage(systemSymbolName: "circle", accessibilityDescription: "CC Status")!
             tintColor = .systemGray
+            newState = .empty
         } else if sessions.contains(where: { $0.state == "blocked" }) {
             // Any session waiting for input - 橙色实心
             image = NSImage(systemSymbolName: "circle.fill", accessibilityDescription: "CC Status")!
             tintColor = .systemOrange
+            newState = .blocked
         } else if sessions.contains(where: { $0.isBusy }) {
             // Any session working - 绿色实心
             image = NSImage(systemSymbolName: "circle.fill", accessibilityDescription: "CC Status")!
             tintColor = .systemGreen
+            newState = .working
         } else {
             // All idle - 灰色实心
             image = NSImage(systemSymbolName: "circle.fill", accessibilityDescription: "CC Status")!
             tintColor = .systemGray
+            newState = .idle
         }
 
         let tintedImage = NSImage(size: image.size, flipped: false) { rect in
@@ -81,6 +98,30 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         tintedImage.isTemplate = false
         button.image = tintedImage
+
+        // 管理动画：仅在 working 状态下脉动
+        if newState == .working {
+            if animationTimer == nil {
+                animationStart = Date()
+                animationTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30.0, repeats: true) { [weak self] _ in
+                    self?.tickAnimation()
+                }
+            }
+        } else {
+            animationTimer?.invalidate()
+            animationTimer = nil
+            button.alphaValue = 1.0
+        }
+        currentState = newState
+    }
+
+    private func tickAnimation() {
+        guard let button = statusItem.button else { return }
+        // 1.5 秒一个呼吸周期，alpha 在 0.4 ~ 1.0 之间
+        let elapsed = Date().timeIntervalSince(animationStart)
+        let phase = (elapsed.truncatingRemainder(dividingBy: 1.5)) / 1.5
+        let alpha = 0.4 + 0.6 * (0.5 - 0.5 * cos(phase * 2 * .pi))
+        button.alphaValue = CGFloat(alpha)
     }
 
     // MARK: - Menu Update
@@ -146,6 +187,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func quit() {
+        animationTimer?.invalidate()
+        animationTimer = nil
+        timer?.invalidate()
+        timer = nil
         NSApplication.shared.terminate(nil)
     }
 }
