@@ -173,11 +173,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         tintedImage.isTemplate = false
         button.image = tintedImage
 
-        // 等待中的 session：把项目名追加到图标后面
+        // 等待中的 session：把项目名追加到图标后面（带淡入效果）
         if newState == .blocked {
             let blockedNames = sessions.filter { $0.isBlocked }
             if let first = blockedNames.first {
+                let isNewTitle = button.title != first.projectName
                 button.title = first.projectName
+                if isNewTitle {
+                    animateTitleAppearance(button: button)
+                }
             } else {
                 button.title = ""
             }
@@ -208,6 +212,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let phase = (elapsed.truncatingRemainder(dividingBy: 1.5)) / 1.5
         let alpha = 0.4 + 0.6 * (0.5 - 0.5 * cos(phase * 2 * .pi))
         button.alphaValue = CGFloat(alpha)
+    }
+
+    /// 标题淡入动画（仅在标题内容变化时触发）
+    private func animateTitleAppearance(button: NSButton) {
+        button.alphaValue = 0
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.3
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            button.animator().alphaValue = 1.0
+        }
     }
 
     // MARK: - Menu Update
