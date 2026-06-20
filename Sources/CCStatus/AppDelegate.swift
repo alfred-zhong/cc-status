@@ -10,9 +10,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var lastError: String?
     private var currentState: IconState = .idle
 
-    // 文件监听（混合监听方案）
-    private var directorySource: DispatchSourceFileSystemObject?
-    private var watchedFD: CInt = -1
+    // 文件监听（FSEventStream 方案）
+    private var fileWatcher: FileWatcher?
     private var debounceWorkItem: DispatchWorkItem?
     private let debounceQueue = DispatchQueue(label: "ccstatus.debounce", qos: .utility)
     private let sessionsDir = NSHomeDirectory() + "/.claude/sessions"
@@ -47,30 +46,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
-        let fd = open(sessionsDir, O_EVTONLY)
-        guard fd >= 0 else { return }
-        watchedFD = fd
-
-        let source = DispatchSource.makeFileSystemObjectSource(
-            fileDescriptor: fd,
-            eventMask: [.write, .extend, .delete, .rename],
-            queue: debounceQueue
-        )
-
-        source.setEventHandler { [weak self] in
+        let watcher = FileWatcher(path: sessionsDir) { [weak self] in
             self?.scheduleDebouncedPoll()
         }
-
-        source.setCancelHandler { [weak self] in
-            guard let self else { return }
-            if self.watchedFD >= 0 {
-                close(self.watchedFD)
-                self.watchedFD = -1
-            }
-        }
-
-        source.resume()
-        directorySource = source
+        watcher.start()
+        fileWatcher = watcher
     }
 
     private func scheduleDebouncedPoll() {
@@ -248,8 +228,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         animationTimer = nil
         timer?.invalidate()
         timer = nil
-        directorySource?.cancel()
-        directorySource = nil
+        fileWatcher?.stop()
+        fileWatcher = nil
         debounceWorkItem?.cancel()
         debounceWorkItem = nil
         NSApplication.shared.terminate(nil)
