@@ -98,16 +98,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             menu.addItem(item)
         } else {
             for session in sessions {
+                let statusColor: NSColor
                 let statusDot: String
                 if session.state == "blocked" {
-                    statusDot = "🟠"  // 等待输入 - 橙色
+                    statusColor = .systemOrange  // 等待输入
+                    statusDot = "●"
                 } else if session.isBusy {
-                    statusDot = "🟢"  // 运行中 - 绿色
+                    statusColor = .systemGreen  // 运行中
+                    statusDot = "●"
                 } else {
-                    statusDot = "⚫"  // 空闲 - 灰色
+                    statusColor = .systemGray  // 空闲
+                    statusDot = "●"
                 }
-                let title = "\(statusDot) \(session.projectName) — \(session.statusDisplay) (\(session.durationDisplay))"
-                let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+
+                let restText = " \(session.projectName) — \(session.statusDisplay) (\(session.durationDisplay))"
+                let attributedTitle = NSMutableAttributedString()
+                attributedTitle.append(NSAttributedString(
+                    string: statusDot,
+                    attributes: [.foregroundColor: statusColor, .font: NSFont.systemFont(ofSize: 13, weight: .bold)]
+                ))
+                attributedTitle.append(NSAttributedString(string: restText))
+
+                let item = NSMenuItem()
+                item.attributedTitle = attributedTitle
                 item.isEnabled = false
                 menu.addItem(item)
             }
