@@ -10,6 +10,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var lastError: String?
     private var currentState: IconState = .idle
 
+    // 文件监听（混合监听方案）
+    private var directorySource: DispatchSourceFileSystemObject?
+    private var watchedFD: CInt = -1
+    private var debounceWorkItem: DispatchWorkItem?
+    private let debounceQueue = DispatchQueue(label: "ccstatus.debounce", qos: .utility)
+    private let sessionsDir = NSHomeDirectory() + "/.claude/sessions"
+
     private enum IconState {
         case error
         case empty
@@ -22,10 +29,60 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setupStatusItem()
         poll()
 
-        // Poll every 3 seconds
-        timer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in
+        // 兜底轮询：每 5 秒
+        timer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
             self?.poll()
         }
+
+        // 文件监听：sessions 目录变化时立即刷新
+        startWatchingSessions()
+    }
+
+    // MARK: - File Watching
+
+    private func startWatchingSessions() {
+        let fm = FileManager.default
+        guard fm.fileExists(atPath: sessionsDir) else {
+            // 目录不存在，退到纯轮询
+            return
+        }
+
+        let fd = open(sessionsDir, O_EVTONLY)
+        guard fd >= 0 else { return }
+        watchedFD = fd
+
+        let source = DispatchSource.makeFileSystemObjectSource(
+            fileDescriptor: fd,
+            eventMask: [.write, .extend, .delete, .rename],
+            queue: debounceQueue
+        )
+
+        source.setEventHandler { [weak self] in
+            self?.scheduleDebouncedPoll()
+        }
+
+        source.setCancelHandler { [weak self] in
+            guard let self else { return }
+            if self.watchedFD >= 0 {
+                close(self.watchedFD)
+                self.watchedFD = -1
+            }
+        }
+
+        source.resume()
+        directorySource = source
+    }
+
+    private func scheduleDebouncedPoll() {
+        debounceWorkItem?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            DispatchQueue.main.async {
+                self?.poll()
+            }
+        }
+        debounceWorkItem = work
+        // 100ms 去抖，避免短时间内多次刷新
+        debounceQueue.asyncAfter(deadline: .now() + 0.1, execute: work)
     }
 
     // MARK: - Status Item Setup
@@ -191,6 +248,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         animationTimer = nil
         timer?.invalidate()
         timer = nil
+        directorySource?.cancel()
+        directorySource = nil
+        debounceWorkItem?.cancel()
+        debounceWorkItem = nil
         NSApplication.shared.terminate(nil)
     }
 }
