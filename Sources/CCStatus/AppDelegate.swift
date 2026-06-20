@@ -173,6 +173,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         tintedImage.isTemplate = false
         button.image = tintedImage
 
+        // 等待中的 session：把项目名追加到图标后面
+        if newState == .blocked {
+            let blockedNames = sessions
+                .filter { $0.isBlocked }
+                .map { $0.projectName }
+            button.title = blockedNames.joined(separator: ", ")
+        } else {
+            button.title = ""
+        }
+
         // 管理动画：仅在 working 状态下脉动
         if newState == .working {
             if animationTimer == nil {
