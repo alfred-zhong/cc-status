@@ -60,9 +60,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             image = NSImage(systemSymbolName: "circle", accessibilityDescription: "CC Status")!
             tintColor = .systemGray
         } else if sessions.contains(where: { $0.state == "blocked" }) {
-            // Any session waiting for input - 蓝色实心
+            // Any session waiting for input - 橙色实心
             image = NSImage(systemSymbolName: "circle.fill", accessibilityDescription: "CC Status")!
-            tintColor = .systemBlue
+            tintColor = .systemOrange
         } else if sessions.contains(where: { $0.isBusy }) {
             // Any session working - 绿色实心
             image = NSImage(systemSymbolName: "circle.fill", accessibilityDescription: "CC Status")!
