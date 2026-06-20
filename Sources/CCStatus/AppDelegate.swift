@@ -29,8 +29,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setupStatusItem()
         poll()
 
-        // 兜底轮询：每 5 秒
-        timer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
+        // 兜底轮询：每 10 秒
+        timer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
             self?.poll()
         }
 
