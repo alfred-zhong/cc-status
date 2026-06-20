@@ -35,6 +35,43 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // 文件监听：sessions 目录变化时立即刷新
         startWatchingSessions()
+
+        // 监听系统睡眠/唤醒，重启监听器避免失效
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self,
+            selector: #selector(handleWake),
+            name: NSWorkspace.didWakeNotification,
+            object: nil
+        )
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self,
+            selector: #selector(handleSleep),
+            name: NSWorkspace.willSleepNotification,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleBecomeActive),
+            name: NSApplication.didBecomeActiveNotification,
+            object: nil
+        )
+    }
+
+    @objc private func handleSleep() {
+        // 睡眠前停止监听器，避免唤醒后状态混乱
+        fileWatcher?.stop()
+        fileWatcher = nil
+    }
+
+    @objc private func handleWake() {
+        // 唤醒后重启监听器 + 主动同步一次
+        startWatchingSessions()
+        poll()
+    }
+
+    @objc private func handleBecomeActive() {
+        // 应用重新激活时同步一次（防止长时间后台后状态过期）
+        poll()
     }
 
     // MARK: - File Watching
@@ -232,6 +269,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         fileWatcher = nil
         debounceWorkItem?.cancel()
         debounceWorkItem = nil
+        NSWorkspace.shared.notificationCenter.removeObserver(self)
+        NotificationCenter.default.removeObserver(self)
         NSApplication.shared.terminate(nil)
     }
 }
