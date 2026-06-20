@@ -22,5 +22,10 @@ cp "$BUILD_DIR/release/$APP_NAME" "$APP_BUNDLE/Contents/MacOS/"
 # Copy Info.plist
 cp "$PROJECT_DIR/Sources/$APP_NAME/Info.plist" "$APP_BUNDLE/Contents/"
 
+# Copy app icon
+if [ -f "$PROJECT_DIR/Sources/$APP_NAME/Resources/AppIcon.icns" ]; then
+    cp "$PROJECT_DIR/Sources/$APP_NAME/Resources/AppIcon.icns" "$APP_BUNDLE/Contents/Resources/"
+fi
+
 echo "Done: $APP_BUNDLE"
 echo "Run with: open $APP_BUNDLE"
