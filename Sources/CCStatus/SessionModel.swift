@@ -59,8 +59,13 @@ struct ClaudeSession: Codable {
         if let state = state {
             return state == "working" || state == "blocked"
         }
-        // 回退到 status 字段
-        return status == "busy"
+        // 回退到 status 字段：busy 或 waiting（waiting 意味着需要输入）
+        return status == "busy" || status == "waiting"
+    }
+
+    var isBlocked: Bool {
+        // state 为 blocked，或 status 为 waiting（waiting 意味着需要输入）
+        return state == "blocked" || status == "waiting"
     }
 }
 

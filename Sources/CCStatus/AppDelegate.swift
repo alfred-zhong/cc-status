@@ -73,7 +73,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             image = NSImage(systemSymbolName: "circle", accessibilityDescription: "CC Status")!
             tintColor = .systemGray
             newState = .empty
-        } else if sessions.contains(where: { $0.state == "blocked" }) {
+        } else if sessions.contains(where: { $0.isBlocked }) {
             // Any session waiting for input - 橙色实心
             image = NSImage(systemSymbolName: "circle.fill", accessibilityDescription: "CC Status")!
             tintColor = .systemOrange
@@ -141,7 +141,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             for session in sessions {
                 let statusColor: NSColor
                 let statusDot: String
-                if session.state == "blocked" {
+                if session.isBlocked {
                     statusColor = .systemOrange  // 等待输入
                     statusDot = "●"
                 } else if session.isBusy {
