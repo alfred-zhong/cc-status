@@ -22,8 +22,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setupStatusItem()
         poll()
 
-        // Poll every 5 seconds
-        timer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
+        // Poll every 3 seconds
+        timer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in
             self?.poll()
         }
     }
