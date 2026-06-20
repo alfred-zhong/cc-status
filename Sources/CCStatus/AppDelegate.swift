@@ -215,12 +215,27 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// 标题淡入动画（仅在标题内容变化时触发）
+    private var titleFadeTimer: Timer?
     private func animateTitleAppearance(button: NSButton) {
+        titleFadeTimer?.invalidate()
         button.alphaValue = 0
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.3
-            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
-            button.animator().alphaValue = 1.0
+        let startTime = Date()
+        titleFadeTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30.0, repeats: true) { [weak button, weak self] timer in
+            guard let button = button else {
+                timer.invalidate()
+                self?.titleFadeTimer = nil
+                return
+            }
+            let elapsed = Date().timeIntervalSince(startTime)
+            let duration: TimeInterval = 0.5
+            let progress = min(elapsed / duration, 1.0)
+            // ease-out: 1 - (1-t)^2
+            let eased = 1 - pow(1 - progress, 2)
+            button.alphaValue = CGFloat(eased)
+            if progress >= 1.0 {
+                timer.invalidate()
+                self?.titleFadeTimer = nil
+            }
         }
     }
 
