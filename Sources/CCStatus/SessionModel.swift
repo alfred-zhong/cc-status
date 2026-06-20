@@ -33,13 +33,14 @@ struct ClaudeSession: Codable {
         // 回退到 status 字段
         if let status = status {
             switch status {
-            case "busy": return "忙碌"
+            case "busy": return "工作中"
             case "waiting": return waitingFor ?? "等待中"
             case "idle": return "空闲"
             default: return status
             }
         }
-        return "未知"
+        // 不应该到这里，因为已过滤无 status 的会话
+        return status ?? state ?? "未知"
     }
 
     var durationDisplay: String {
