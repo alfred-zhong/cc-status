@@ -173,15 +173,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         tintedImage.isTemplate = false
         button.image = tintedImage
 
-        // 等待中的 session：把项目名追加到图标后面（带淡入效果）
+        // 等待中的 session：把项目名追加到图标后面
         if newState == .blocked {
             let blockedNames = sessions.filter { $0.isBlocked }
             if let first = blockedNames.first {
-                let isNewTitle = button.title != first.projectName
                 button.title = first.projectName
-                if isNewTitle {
-                    animateTitleAppearance(button: button)
-                }
             } else {
                 button.title = ""
             }
@@ -212,31 +208,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let phase = (elapsed.truncatingRemainder(dividingBy: 1.5)) / 1.5
         let alpha = 0.4 + 0.6 * (0.5 - 0.5 * cos(phase * 2 * .pi))
         button.alphaValue = CGFloat(alpha)
-    }
-
-    /// 标题淡入动画（仅在标题内容变化时触发）
-    private var titleFadeTimer: Timer?
-    private func animateTitleAppearance(button: NSButton) {
-        titleFadeTimer?.invalidate()
-        button.alphaValue = 0
-        let startTime = Date()
-        titleFadeTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30.0, repeats: true) { [weak button, weak self] timer in
-            guard let button = button else {
-                timer.invalidate()
-                self?.titleFadeTimer = nil
-                return
-            }
-            let elapsed = Date().timeIntervalSince(startTime)
-            let duration: TimeInterval = 0.5
-            let progress = min(elapsed / duration, 1.0)
-            // ease-out: 1 - (1-t)^2
-            let eased = 1 - pow(1 - progress, 2)
-            button.alphaValue = CGFloat(eased)
-            if progress >= 1.0 {
-                timer.invalidate()
-                self?.titleFadeTimer = nil
-            }
-        }
     }
 
     // MARK: - Menu Update
