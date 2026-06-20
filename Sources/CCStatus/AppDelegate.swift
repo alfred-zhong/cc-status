@@ -175,10 +175,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // 等待中的 session：把项目名追加到图标后面
         if newState == .blocked {
-            let blockedNames = sessions
-                .filter { $0.isBlocked }
-                .map { $0.projectName }
-            button.title = blockedNames.joined(separator: ", ")
+            let blockedNames = sessions.filter { $0.isBlocked }
+            if let first = blockedNames.first {
+                button.title = first.projectName
+            } else {
+                button.title = ""
+            }
         } else {
             button.title = ""
         }
