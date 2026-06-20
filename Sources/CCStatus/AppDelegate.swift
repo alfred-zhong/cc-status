@@ -28,10 +28,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setupStatusItem()
         poll()
 
-        // 兜底轮询：每 10 秒
-        timer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
-            self?.poll()
-        }
+        // 兜底轮询：每 5 秒（已临时关闭，测试纯文件监听）
+        // timer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
+        //     self?.poll()
+        // }
 
         // 文件监听：sessions 目录变化时立即刷新
         startWatchingSessions()
