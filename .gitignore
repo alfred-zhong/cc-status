@@ -1,0 +1,7 @@
+/bin
+/dist
+/.worktrees
+.DS_Store
+Thumbs.db
+.build/
+CCStatus.app
