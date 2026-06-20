@@ -100,11 +100,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             for session in sessions {
                 let statusDot: String
                 if session.state == "blocked" {
-                    statusDot = "🔵"  // 等待输入
+                    statusDot = "🟠"  // 等待输入 - 橙色
                 } else if session.isBusy {
-                    statusDot = "🟢"  // 运行中
+                    statusDot = "🟢"  // 运行中 - 绿色
                 } else {
-                    statusDot = "⚪"  // 空闲
+                    statusDot = "⚫"  // 空闲 - 灰色
                 }
                 let title = "\(statusDot) \(session.projectName) — \(session.statusDisplay) (\(session.durationDisplay))"
                 let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
