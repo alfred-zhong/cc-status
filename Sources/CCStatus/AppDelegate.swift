@@ -52,26 +52,35 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let tintColor: NSColor
 
         if !monitor.isAvailable || lastError != nil {
-            // Claude not found or error
+            // Claude not found or error - 灰色空心
             image = NSImage(systemSymbolName: "circle", accessibilityDescription: "CC Status")!
             tintColor = .systemGray
         } else if sessions.isEmpty {
-            // No sessions
+            // No sessions - 灰色空心
             image = NSImage(systemSymbolName: "circle", accessibilityDescription: "CC Status")!
             tintColor = .systemGray
-        } else if sessions.contains(where: { $0.isBusy }) {
-            // Any session busy
+        } else if sessions.contains(where: { $0.state == "blocked" }) {
+            // Any session waiting for input - 蓝色实心
             image = NSImage(systemSymbolName: "circle.fill", accessibilityDescription: "CC Status")!
-            tintColor = .systemOrange
-        } else {
-            // All idle
+            tintColor = .systemBlue
+        } else if sessions.contains(where: { $0.isBusy }) {
+            // Any session working - 绿色实心
             image = NSImage(systemSymbolName: "circle.fill", accessibilityDescription: "CC Status")!
             tintColor = .systemGreen
+        } else {
+            // All idle - 灰色实心
+            image = NSImage(systemSymbolName: "circle.fill", accessibilityDescription: "CC Status")!
+            tintColor = .systemGray
         }
 
-        image.isTemplate = false
-        button.image = image
-        button.contentTintColor = tintColor
+        let tintedImage = NSImage(size: image.size, flipped: false) { rect in
+            tintColor.set()
+            rect.fill()
+            image.draw(in: rect, from: .zero, operation: .destinationIn, fraction: 1.0)
+            return true
+        }
+        tintedImage.isTemplate = false
+        button.image = tintedImage
     }
 
     // MARK: - Menu Update
@@ -89,7 +98,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             menu.addItem(item)
         } else {
             for session in sessions {
-                let statusDot = session.isBusy ? "🟡" : "🟢"
+                let statusDot: String
+                if session.state == "blocked" {
+                    statusDot = "🔵"  // 等待输入
+                } else if session.isBusy {
+                    statusDot = "🟢"  // 运行中
+                } else {
+                    statusDot = "⚪"  // 空闲
+                }
                 let title = "\(statusDot) \(session.projectName) — \(session.statusDisplay) (\(session.durationDisplay))"
                 let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
                 item.isEnabled = false
