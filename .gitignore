@@ -4,4 +4,5 @@
 .DS_Store
 Thumbs.db
 .build/
+/build
 CCStatus.app
