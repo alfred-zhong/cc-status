@@ -3,6 +3,7 @@ import AppKit
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private let monitor = ClaudeMonitor()
+    private let detector = HostAppDetector()
     private var timer: Timer?
     private var animationTimer: Timer?
     private var animationStart: Date = Date()
@@ -122,6 +123,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self.lastError = error.localizedDescription
         }
 
+        // 预热 detector 缓存(新 PID 走进程树,已有 PID 直接命中)
+        // 并清掉已不存在的 PID 缓存条目。
+        let livePids = Set(sessions.compactMap { $0.pid })
+        for pid in livePids {
+            _ = detector.detect(forPid: pid)
+        }
+        detector.pruneCache(keepingLivePids: livePids)
+
         DispatchQueue.main.async { [weak self] in
             self?.updateIcon()
             self?.updateMenu()
@@ -238,7 +247,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     statusDot = "●"
                 }
 
-                let restText = " \(session.projectName) — \(session.statusDisplay) (\(session.durationDisplay))"
+                // 查找宿主 app;找不到就显示"未知"且不可点击
+                let hostApp = session.pid.flatMap { detector.detect(forPid: $0) }
+                let hostSegment = hostApp.map { " (\($0.shortName))" } ?? " (未知)"
+
+                let restText = " \(session.projectName)\(hostSegment) — \(session.statusDisplay) (\(session.durationDisplay))"
                 let attributedTitle = NSMutableAttributedString()
                 attributedTitle.append(NSAttributedString(
                     string: statusDot,
@@ -248,7 +261,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
                 let item = NSMenuItem()
                 item.attributedTitle = attributedTitle
-                item.isEnabled = false
+                if let hostApp {
+                    item.target = self
+                    item.action = #selector(activateSession(_:))
+                    item.representedObject = hostApp.bundleId
+                } else {
+                    item.isEnabled = false
+                }
                 menu.addItem(item)
             }
         }
@@ -270,6 +289,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func refresh() {
         poll()
+    }
+
+    @objc private func activateSession(_ sender: NSMenuItem) {
+        guard let bundleId = sender.representedObject as? String else { return }
+        AppActivator.activate(bundleId: bundleId)
     }
 
     @objc private func quit() {
