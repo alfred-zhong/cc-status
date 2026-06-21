@@ -1,14 +1,16 @@
 import AppKit
 
 /// 配置面板窗口控制器。
-/// 通过菜单栏"配置"项打开,目前只承载一个开关:自动排序 session。
+/// 通过菜单栏"配置"项打开,承载三个开关:autoSortSessions / showWaitingNameInMenuBar / showRunningNameInMenuBar。
 /// 设计原则: 极简自用,后续新增配置项只需往 NSView 里加控件,无需重构。
 final class PreferencesWindowController: NSWindowController {
     private static let autoSortKey = "autoSortSessions"
+    private static let showWaitingNameKey = "showWaitingNameInMenuBar"
+    private static let showRunningNameKey = "showRunningNameInMenuBar"
 
     init() {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 400, height: 140),
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 220),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -19,18 +21,45 @@ final class PreferencesWindowController: NSWindowController {
 
         super.init(window: window)
 
-        let checkbox = NSButton(
+        let autoSortCheckbox = NSButton(
             checkboxWithTitle: "自动排序 session (等待中 → 工作中 → 空闲)",
             target: self,
             action: #selector(autoSortChanged(_:))
         )
-        checkbox.state = UserDefaults.standard.bool(forKey: Self.autoSortKey) ? .on : .off
-        checkbox.translatesAutoresizingMaskIntoConstraints = false
-        window.contentView?.addSubview(checkbox)
+        autoSortCheckbox.state = UserDefaults.standard.bool(forKey: Self.autoSortKey) ? .on : .off
+        autoSortCheckbox.translatesAutoresizingMaskIntoConstraints = false
+        window.contentView?.addSubview(autoSortCheckbox)
+
+        let waitingNameCheckbox = NSButton(
+            checkboxWithTitle: "菜单栏显示等待中 session 名称",
+            target: self,
+            action: #selector(waitingNameChanged(_:))
+        )
+        waitingNameCheckbox.state = UserDefaults.standard.bool(forKey: Self.showWaitingNameKey) ? .on : .off
+        waitingNameCheckbox.translatesAutoresizingMaskIntoConstraints = false
+        window.contentView?.addSubview(waitingNameCheckbox)
+
+        let runningNameCheckbox = NSButton(
+            checkboxWithTitle: "菜单栏显示运行中 session 名称",
+            target: self,
+            action: #selector(runningNameChanged(_:))
+        )
+        runningNameCheckbox.state = UserDefaults.standard.bool(forKey: Self.showRunningNameKey) ? .on : .off
+        runningNameCheckbox.translatesAutoresizingMaskIntoConstraints = false
+        window.contentView?.addSubview(runningNameCheckbox)
+
         NSLayoutConstraint.activate([
-            checkbox.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor, constant: 20),
-            checkbox.topAnchor.constraint(equalTo: window.contentView!.topAnchor, constant: 24),
-            checkbox.trailingAnchor.constraint(lessThanOrEqualTo: window.contentView!.trailingAnchor, constant: -20),
+            autoSortCheckbox.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor, constant: 20),
+            autoSortCheckbox.topAnchor.constraint(equalTo: window.contentView!.topAnchor, constant: 24),
+            autoSortCheckbox.trailingAnchor.constraint(lessThanOrEqualTo: window.contentView!.trailingAnchor, constant: -20),
+
+            waitingNameCheckbox.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor, constant: 20),
+            waitingNameCheckbox.topAnchor.constraint(equalTo: autoSortCheckbox.bottomAnchor, constant: 12),
+            waitingNameCheckbox.trailingAnchor.constraint(lessThanOrEqualTo: window.contentView!.trailingAnchor, constant: -20),
+
+            runningNameCheckbox.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor, constant: 20),
+            runningNameCheckbox.topAnchor.constraint(equalTo: waitingNameCheckbox.bottomAnchor, constant: 12),
+            runningNameCheckbox.trailingAnchor.constraint(lessThanOrEqualTo: window.contentView!.trailingAnchor, constant: -20),
         ])
     }
 
@@ -38,6 +67,16 @@ final class PreferencesWindowController: NSWindowController {
 
     @objc private func autoSortChanged(_ sender: NSButton) {
         UserDefaults.standard.set(sender.state == .on, forKey: Self.autoSortKey)
+        NotificationCenter.default.post(name: .preferencesChanged, object: nil)
+    }
+
+    @objc private func waitingNameChanged(_ sender: NSButton) {
+        UserDefaults.standard.set(sender.state == .on, forKey: Self.showWaitingNameKey)
+        NotificationCenter.default.post(name: .preferencesChanged, object: nil)
+    }
+
+    @objc private func runningNameChanged(_ sender: NSButton) {
+        UserDefaults.standard.set(sender.state == .on, forKey: Self.showRunningNameKey)
         NotificationCenter.default.post(name: .preferencesChanged, object: nil)
     }
 }

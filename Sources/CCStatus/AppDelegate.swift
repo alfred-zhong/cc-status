@@ -20,6 +20,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // 配置面板
     private lazy var preferencesWindow: PreferencesWindowController = PreferencesWindowController()
     private static let autoSortKey = "autoSortSessions"
+    private static let showWaitingNameKey = "showWaitingNameInMenuBar"
+    private static let showRunningNameKey = "showRunningNameInMenuBar"
 
     // session 状态追踪：用于 auto-sort 在同档内按"状态变化时间"二次排序
     private var lastSeenStatus: [String: String] = [:]
@@ -34,8 +36,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // 注册配置默认值：首次启动时 autoSortSessions 默认开启
-        UserDefaults.standard.register(defaults: [Self.autoSortKey: true])
+        // 注册配置默认值：首次启动时所有 toggle 默认开启
+        UserDefaults.standard.register(defaults: [
+            Self.autoSortKey: true,
+            Self.showWaitingNameKey: true,
+            Self.showRunningNameKey: true,
+        ])
 
         // 监听配置变更通知，触发菜单重新构建
         NotificationCenter.default.addObserver(
@@ -202,11 +208,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         tintedImage.isTemplate = false
         button.image = tintedImage
 
-        // 等待中的 session：把项目名追加到图标后面
+        // 等待中 / 运行中的 session：把项目名追加到图标后面（受各自 toggle 控制）
         if newState == .blocked {
-            let blockedNames = sessions.filter { $0.isBlocked }
-            if let first = blockedNames.first {
-                button.title = first.projectName
+            if UserDefaults.standard.bool(forKey: Self.showWaitingNameKey) {
+                let blockedNames = sortedForDisplay(sessions).filter { $0.isBlocked }
+                button.title = blockedNames.first?.projectName ?? ""
+            } else {
+                button.title = ""
+            }
+        } else if newState == .working {
+            if UserDefaults.standard.bool(forKey: Self.showRunningNameKey) {
+                let workingNames = sortedForDisplay(sessions).filter { $0.isBusy }
+                button.title = workingNames.first?.projectName ?? ""
             } else {
                 button.title = ""
             }
