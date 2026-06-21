@@ -17,6 +17,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private let debounceQueue = DispatchQueue(label: "ccstatus.debounce", qos: .utility)
     private let sessionsDir = NSHomeDirectory() + "/.claude/sessions"
 
+    // 配置面板
+    private lazy var preferencesWindow: PreferencesWindowController = PreferencesWindowController()
+    private static let autoSortKey = "autoSortSessions"
+
+    // session 状态追踪：用于 auto-sort 在同档内按"状态变化时间"二次排序
+    private var lastSeenStatus: [String: String] = [:]
+    private var lastStateChange: [String: Date] = [:]
+
     private enum IconState {
         case error
         case empty
@@ -26,6 +34,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // 注册配置默认值：首次启动时 autoSortSessions 默认开启
+        UserDefaults.standard.register(defaults: [Self.autoSortKey: true])
+
+        // 监听配置变更通知，触发菜单重新构建
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handlePreferencesChanged),
+            name: .preferencesChanged,
+            object: nil
+        )
+
         setupStatusItem()
         poll()
 
@@ -117,6 +136,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         switch result {
         case .success(let sessions):
+            trackStatusChanges(sessions)
             self.sessions = sessions
             self.lastError = nil
         case .failure(let error):
@@ -233,7 +253,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             item.isEnabled = false
             menu.addItem(item)
         } else {
-            for session in sessions {
+            for session in sortedForDisplay(sessions) {
                 let statusColor: NSColor
                 let statusDot: String
                 if session.isBlocked {
@@ -278,6 +298,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         refreshItem.target = self
         menu.addItem(refreshItem)
 
+        let preferencesItem = NSMenuItem(title: "配置", action: #selector(showPreferences), keyEquivalent: ",")
+        preferencesItem.target = self
+        menu.addItem(preferencesItem)
+
         let quitItem = NSMenuItem(title: "退出", action: #selector(quit), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
@@ -308,5 +332,56 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSWorkspace.shared.notificationCenter.removeObserver(self)
         NotificationCenter.default.removeObserver(self)
         NSApplication.shared.terminate(nil)
+    }
+
+    // MARK: - Preferences
+
+    @objc private func showPreferences() {
+        preferencesWindow.showWindow(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    @objc private func handlePreferencesChanged() {
+        updateMenu()
+    }
+
+    // MARK: - Sorting
+
+    /// 追踪每个 session 的 status 变化,记录最近一次变化时间。
+    /// 用于 auto-sort 同档内按"状态变化时间"二次排序。
+    private func trackStatusChanges(_ sessions: [ClaudeSession]) {
+        let now = Date()
+        let liveIds = Set(sessions.map { $0.displayId })
+        for session in sessions {
+            let status = session.statusDisplay
+            if lastSeenStatus[session.displayId] != status {
+                lastSeenStatus[session.displayId] = status
+                lastStateChange[session.displayId] = now
+            }
+        }
+        // 清掉已消失的 session
+        lastSeenStatus = lastSeenStatus.filter { liveIds.contains($0.key) }
+        lastStateChange = lastStateChange.filter { liveIds.contains($0.key) }
+    }
+
+    /// 根据 autoSortSessions 设置决定是否排序。
+    /// 排序规则: 等待中(0) > 工作中(1) > 空闲(2);同档内按状态变化时间倒序(最近的在前)。
+    private func sortedForDisplay(_ sessions: [ClaudeSession]) -> [ClaudeSession] {
+        guard UserDefaults.standard.bool(forKey: Self.autoSortKey) else { return sessions }
+        return sessions.sorted { a, b in
+            let tierA = priorityTier(a)
+            let tierB = priorityTier(b)
+            if tierA != tierB { return tierA < tierB }
+            let timeA = lastStateChange[a.displayId] ?? .distantPast
+            let timeB = lastStateChange[b.displayId] ?? .distantPast
+            return timeA > timeB
+        }
+    }
+
+    /// 排序优先级分档: 数字越小越靠前。
+    private func priorityTier(_ session: ClaudeSession) -> Int {
+        if session.isBlocked { return 0 }   // 等待中
+        if session.isBusy { return 1 }      // 工作中
+        return 2                            // 空闲
     }
 }
