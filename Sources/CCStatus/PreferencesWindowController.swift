@@ -7,6 +7,9 @@ final class PreferencesWindowController: NSWindowController {
     private static let autoSortKey = "autoSortSessions"
     private static let showWaitingNameKey = "showWaitingNameInMenuBar"
     private static let showRunningNameKey = "showRunningNameInMenuBar"
+    // SPM `swift run` 模式下读不到 Info.plist,回落此值
+    // 改版本时同步改 Info.plist 的 CFBundleShortVersionString
+    private static let fallbackVersion = "0.1.0"
 
     init() {
         let window = NSWindow(
@@ -48,6 +51,15 @@ final class PreferencesWindowController: NSWindowController {
         runningNameCheckbox.translatesAutoresizingMaskIntoConstraints = false
         window.contentView?.addSubview(runningNameCheckbox)
 
+        // 版本号:读 Info.plist 的 CFBundleShortVersionString,SPM 模式回落 fallbackVersion
+        let versionString = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+            ?? Self.fallbackVersion
+        let versionLabel = NSTextField(labelWithString: "v\(versionString)")
+        versionLabel.font = NSFont.systemFont(ofSize: 11, weight: .regular)
+        versionLabel.textColor = NSColor.secondaryLabelColor
+        versionLabel.translatesAutoresizingMaskIntoConstraints = false
+        window.contentView?.addSubview(versionLabel)
+
         NSLayoutConstraint.activate([
             autoSortCheckbox.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor, constant: 20),
             autoSortCheckbox.topAnchor.constraint(equalTo: window.contentView!.topAnchor, constant: 24),
@@ -60,6 +72,9 @@ final class PreferencesWindowController: NSWindowController {
             runningNameCheckbox.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor, constant: 20),
             runningNameCheckbox.topAnchor.constraint(equalTo: waitingNameCheckbox.bottomAnchor, constant: 12),
             runningNameCheckbox.trailingAnchor.constraint(lessThanOrEqualTo: window.contentView!.trailingAnchor, constant: -20),
+
+            versionLabel.centerXAnchor.constraint(equalTo: window.contentView!.centerXAnchor),
+            versionLabel.bottomAnchor.constraint(equalTo: window.contentView!.bottomAnchor, constant: -16),
         ])
     }
 

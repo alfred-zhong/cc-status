@@ -307,10 +307,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
-        let refreshItem = NSMenuItem(title: "刷新", action: #selector(refresh), keyEquivalent: "r")
-        refreshItem.target = self
-        menu.addItem(refreshItem)
-
         let preferencesItem = NSMenuItem(title: "配置", action: #selector(showPreferences), keyEquivalent: ",")
         preferencesItem.target = self
         menu.addItem(preferencesItem)
@@ -323,10 +319,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     // MARK: - Actions
-
-    @objc private func refresh() {
-        poll()
-    }
 
     @objc private func activateSession(_ sender: NSMenuItem) {
         guard let bundleId = sender.representedObject as? String else { return }
