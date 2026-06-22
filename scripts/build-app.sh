@@ -27,5 +27,8 @@ if [ -f "$PROJECT_DIR/Sources/$APP_NAME/Resources/AppIcon.icns" ]; then
     cp "$PROJECT_DIR/Sources/$APP_NAME/Resources/AppIcon.icns" "$APP_BUNDLE/Contents/Resources/"
 fi
 
+# Ad-hoc 签名（macOS 通知等系统功能需要至少 ad-hoc 签名）
+codesign --force --sign - "$APP_BUNDLE"
+
 echo "Done: $APP_BUNDLE"
 echo "Run with: open $APP_BUNDLE"
