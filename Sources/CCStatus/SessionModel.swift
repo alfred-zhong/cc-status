@@ -34,7 +34,9 @@ struct ClaudeSession: Codable {
         if let status = status {
             switch status {
             case "busy": return "工作中"
-            case "waiting": return waitingFor ?? "等待中"
+            case "waiting":
+                if waitingFor == "dialog open" { return "浏览中" }
+                return waitingFor ?? "等待中"
             case "idle": return "空闲"
             default: return status
             }
@@ -54,18 +56,25 @@ struct ClaudeSession: Codable {
         return "\(hours)小时\(remainMinutes)分钟"
     }
 
+    /// waitingFor 为这些值时，不算"真正需要用户输入"，而是用户主动打开了 UI
+    private static let ignorableWaitingReasons: Set<String> = ["dialog open"]
+
     var isBusy: Bool {
         // 使用 state 字段判断
         if let state = state {
             return state == "working" || state == "blocked"
         }
-        // 回退到 status 字段：busy 或 waiting（waiting 意味着需要输入）
-        return status == "busy" || status == "waiting"
+        // 回退到 status 字段：busy 或 waiting（排除 dialog open 等非真正等待的情况）
+        if status == "busy" { return true }
+        if status == "waiting" { return !Self.ignorableWaitingReasons.contains(waitingFor ?? "") }
+        return false
     }
 
     var isBlocked: Bool {
-        // state 为 blocked，或 status 为 waiting（waiting 意味着需要输入）
-        return state == "blocked" || status == "waiting"
+        if state == "blocked" { return true }
+        // status 为 waiting 时，排除 dialog open 等非真正等待的情况
+        if status == "waiting" { return !Self.ignorableWaitingReasons.contains(waitingFor ?? "") }
+        return false
     }
 }
 
