@@ -21,6 +21,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private static let autoSortKey = "autoSortSessions"
     private static let showWaitingNameKey = "showWaitingNameInMenuBar"
     private static let showRunningNameKey = "showRunningNameInMenuBar"
+    private static let maxNameLengthKey = "maxNameLengthInMenuBar"
 
     // session 状态追踪：用于 auto-sort 在同档内按"状态变化时间"二次排序
     private var lastSeenStatus: [String: String] = [:]
@@ -40,6 +41,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             Self.autoSortKey: true,
             Self.showWaitingNameKey: true,
             Self.showRunningNameKey: true,
+            Self.maxNameLengthKey: 20,
         ])
 
         // 监听配置变更通知，触发菜单重新构建
@@ -202,18 +204,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         tintedImage.isTemplate = false
         button.image = tintedImage
 
-        // 等待中 / 运行中的 session：把项目名追加到图标后面（受各自 toggle 控制）
+        // 等待中 / 运行中的 session：把项目名追加到图标后面（受各自 toggle 控制 + 截断配置）
         if newState == .blocked {
             if UserDefaults.standard.bool(forKey: Self.showWaitingNameKey) {
                 let blockedNames = sortedForDisplay(sessions).filter { $0.isBlocked }
-                button.title = blockedNames.first?.projectName ?? ""
+                button.title = truncateForMenuBar(blockedNames.first?.projectName ?? "")
             } else {
                 button.title = ""
             }
         } else if newState == .working {
             if UserDefaults.standard.bool(forKey: Self.showRunningNameKey) {
                 let workingNames = sortedForDisplay(sessions).filter { $0.isBusy }
-                button.title = workingNames.first?.projectName ?? ""
+                button.title = truncateForMenuBar(workingNames.first?.projectName ?? "")
             } else {
                 button.title = ""
             }
@@ -244,6 +246,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let phase = (elapsed.truncatingRemainder(dividingBy: 1.5)) / 1.5
         let alpha = 0.4 + 0.6 * (0.5 - 0.5 * cos(phase * 2 * .pi))
         button.alphaValue = CGFloat(alpha)
+    }
+
+    /// 按 maxNameLengthInMenuBar 设置截断菜单栏标题。
+    /// 0 = 不限制; N < 3 视为不限制 (防御); N >= 3 且 name.count > N 时截断为 前(N-3)字符 + "..."
+    private func truncateForMenuBar(_ name: String) -> String {
+        let maxLength = UserDefaults.standard.integer(forKey: Self.maxNameLengthKey)
+        guard maxLength >= 3 else { return name }
+        guard name.count > maxLength else { return name }
+        return String(name.prefix(maxLength - 3)) + "..."
     }
 
     // MARK: - Menu Update
