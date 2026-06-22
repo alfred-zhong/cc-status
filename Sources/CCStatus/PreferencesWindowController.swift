@@ -1,7 +1,10 @@
 import AppKit
 
 /// 配置面板窗口控制器。
-/// 通过菜单栏"配置"项打开,承载五个开关:autoSortSessions / showWaitingNameInMenuBar / showRunningNameInMenuBar / maxNameLengthInMenuBar / desktopNotificationsEnabled。
+/// 通过菜单栏"配置"项打开,配置项分三组:
+/// - 排序: autoSortSessions
+/// - 菜单栏: showWaitingNameInMenuBar / showRunningNameInMenuBar / maxNameLengthInMenuBar
+/// - 通知: desktopNotificationsEnabled
 /// 设计原则: 极简自用,后续新增配置项只需往 NSView 里加控件,无需重构。
 final class PreferencesWindowController: NSWindowController {
     private static let autoSortKey = "autoSortSessions"
@@ -15,7 +18,7 @@ final class PreferencesWindowController: NSWindowController {
 
     init() {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 400, height: 308),
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 320),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -26,6 +29,19 @@ final class PreferencesWindowController: NSWindowController {
 
         super.init(window: window)
 
+        // 分组标题辅助函数
+        func makeSectionLabel(_ text: String) -> NSTextField {
+            let label = NSTextField(labelWithString: text)
+            label.font = NSFont.systemFont(ofSize: 11, weight: .semibold)
+            label.textColor = NSColor.secondaryLabelColor
+            label.translatesAutoresizingMaskIntoConstraints = false
+            window.contentView?.addSubview(label)
+            return label
+        }
+
+        // — 排序 —
+        let sortLabel = makeSectionLabel("排序")
+
         let autoSortCheckbox = NSButton(
             checkboxWithTitle: "自动排序 session (等待中 → 工作中 → 空闲)",
             target: self,
@@ -34,6 +50,9 @@ final class PreferencesWindowController: NSWindowController {
         autoSortCheckbox.state = UserDefaults.standard.bool(forKey: Self.autoSortKey) ? .on : .off
         autoSortCheckbox.translatesAutoresizingMaskIntoConstraints = false
         window.contentView?.addSubview(autoSortCheckbox)
+
+        // — 菜单栏 —
+        let menuBarLabel = makeSectionLabel("菜单栏")
 
         let waitingNameCheckbox = NSButton(
             checkboxWithTitle: "菜单栏显示等待中 session 名称",
@@ -86,6 +105,9 @@ final class PreferencesWindowController: NSWindowController {
         maxLengthHint.translatesAutoresizingMaskIntoConstraints = false
         window.contentView?.addSubview(maxLengthHint)
 
+        // — 通知 —
+        let notificationLabel = makeSectionLabel("通知")
+
         // 桌面通知开关
         let notificationCheckbox = NSButton(
             checkboxWithTitle: "桌面通知（session 等待输入时）",
@@ -106,16 +128,24 @@ final class PreferencesWindowController: NSWindowController {
         window.contentView?.addSubview(versionLabel)
 
         NSLayoutConstraint.activate([
+            // 排序
+            sortLabel.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor, constant: 20),
+            sortLabel.topAnchor.constraint(equalTo: window.contentView!.topAnchor, constant: 16),
+
             autoSortCheckbox.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor, constant: 20),
-            autoSortCheckbox.topAnchor.constraint(equalTo: window.contentView!.topAnchor, constant: 24),
+            autoSortCheckbox.topAnchor.constraint(equalTo: sortLabel.bottomAnchor, constant: 6),
             autoSortCheckbox.trailingAnchor.constraint(lessThanOrEqualTo: window.contentView!.trailingAnchor, constant: -20),
 
+            // 菜单栏
+            menuBarLabel.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor, constant: 20),
+            menuBarLabel.topAnchor.constraint(equalTo: autoSortCheckbox.bottomAnchor, constant: 16),
+
             waitingNameCheckbox.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor, constant: 20),
-            waitingNameCheckbox.topAnchor.constraint(equalTo: autoSortCheckbox.bottomAnchor, constant: 12),
+            waitingNameCheckbox.topAnchor.constraint(equalTo: menuBarLabel.bottomAnchor, constant: 6),
             waitingNameCheckbox.trailingAnchor.constraint(lessThanOrEqualTo: window.contentView!.trailingAnchor, constant: -20),
 
             runningNameCheckbox.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor, constant: 20),
-            runningNameCheckbox.topAnchor.constraint(equalTo: waitingNameCheckbox.bottomAnchor, constant: 12),
+            runningNameCheckbox.topAnchor.constraint(equalTo: waitingNameCheckbox.bottomAnchor, constant: 8),
             runningNameCheckbox.trailingAnchor.constraint(lessThanOrEqualTo: window.contentView!.trailingAnchor, constant: -20),
 
             maxLengthLabel.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor, constant: 20),
@@ -123,16 +153,21 @@ final class PreferencesWindowController: NSWindowController {
             maxLengthLabel.trailingAnchor.constraint(lessThanOrEqualTo: maxLengthPopup.leadingAnchor, constant: -8),
 
             maxLengthPopup.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor, constant: 220),
-            maxLengthPopup.topAnchor.constraint(equalTo: runningNameCheckbox.bottomAnchor, constant: 12),
+            maxLengthPopup.topAnchor.constraint(equalTo: runningNameCheckbox.bottomAnchor, constant: 8),
 
             maxLengthHint.leadingAnchor.constraint(equalTo: maxLengthPopup.trailingAnchor, constant: 8),
             maxLengthHint.centerYAnchor.constraint(equalTo: maxLengthPopup.centerYAnchor),
             maxLengthHint.trailingAnchor.constraint(lessThanOrEqualTo: window.contentView!.trailingAnchor, constant: -20),
 
+            // 通知
+            notificationLabel.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor, constant: 20),
+            notificationLabel.topAnchor.constraint(equalTo: maxLengthPopup.bottomAnchor, constant: 16),
+
             notificationCheckbox.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor, constant: 20),
-            notificationCheckbox.topAnchor.constraint(equalTo: maxLengthPopup.bottomAnchor, constant: 12),
+            notificationCheckbox.topAnchor.constraint(equalTo: notificationLabel.bottomAnchor, constant: 6),
             notificationCheckbox.trailingAnchor.constraint(lessThanOrEqualTo: window.contentView!.trailingAnchor, constant: -20),
 
+            // 版本号
             versionLabel.centerXAnchor.constraint(equalTo: window.contentView!.centerXAnchor),
             versionLabel.bottomAnchor.constraint(equalTo: window.contentView!.bottomAnchor, constant: -16),
         ])
