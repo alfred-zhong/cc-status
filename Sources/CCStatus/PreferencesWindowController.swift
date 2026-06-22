@@ -1,20 +1,21 @@
 import AppKit
 
 /// 配置面板窗口控制器。
-/// 通过菜单栏"配置"项打开,承载四个开关:autoSortSessions / showWaitingNameInMenuBar / showRunningNameInMenuBar / maxNameLengthInMenuBar。
+/// 通过菜单栏"配置"项打开,承载五个开关:autoSortSessions / showWaitingNameInMenuBar / showRunningNameInMenuBar / maxNameLengthInMenuBar / desktopNotificationsEnabled。
 /// 设计原则: 极简自用,后续新增配置项只需往 NSView 里加控件,无需重构。
 final class PreferencesWindowController: NSWindowController {
     private static let autoSortKey = "autoSortSessions"
     private static let showWaitingNameKey = "showWaitingNameInMenuBar"
     private static let showRunningNameKey = "showRunningNameInMenuBar"
     private static let maxNameLengthKey = "maxNameLengthInMenuBar"
+    private static let notificationKey = "desktopNotificationsEnabled"
     // SPM `swift run` 模式下读不到 Info.plist,回落此值
     // 改版本时同步改 Info.plist 的 CFBundleShortVersionString
-    private static let fallbackVersion = "0.1.1"
+    private static let fallbackVersion = "0.1.2"
 
     init() {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 400, height: 264),
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 308),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -85,6 +86,16 @@ final class PreferencesWindowController: NSWindowController {
         maxLengthHint.translatesAutoresizingMaskIntoConstraints = false
         window.contentView?.addSubview(maxLengthHint)
 
+        // 桌面通知开关
+        let notificationCheckbox = NSButton(
+            checkboxWithTitle: "桌面通知（session 等待输入时）",
+            target: self,
+            action: #selector(notificationToggleChanged(_:))
+        )
+        notificationCheckbox.state = UserDefaults.standard.bool(forKey: Self.notificationKey) ? .on : .off
+        notificationCheckbox.translatesAutoresizingMaskIntoConstraints = false
+        window.contentView?.addSubview(notificationCheckbox)
+
         // 版本号:读 Info.plist 的 CFBundleShortVersionString,SPM 模式回落 fallbackVersion
         let versionString = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
             ?? Self.fallbackVersion
@@ -118,6 +129,10 @@ final class PreferencesWindowController: NSWindowController {
             maxLengthHint.centerYAnchor.constraint(equalTo: maxLengthPopup.centerYAnchor),
             maxLengthHint.trailingAnchor.constraint(lessThanOrEqualTo: window.contentView!.trailingAnchor, constant: -20),
 
+            notificationCheckbox.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor, constant: 20),
+            notificationCheckbox.topAnchor.constraint(equalTo: maxLengthPopup.bottomAnchor, constant: 12),
+            notificationCheckbox.trailingAnchor.constraint(lessThanOrEqualTo: window.contentView!.trailingAnchor, constant: -20),
+
             versionLabel.centerXAnchor.constraint(equalTo: window.contentView!.centerXAnchor),
             versionLabel.bottomAnchor.constraint(equalTo: window.contentView!.bottomAnchor, constant: -16),
         ])
@@ -142,6 +157,11 @@ final class PreferencesWindowController: NSWindowController {
 
     @objc private func maxNameLengthChanged(_ sender: NSPopUpButton) {
         UserDefaults.standard.set(sender.selectedTag(), forKey: Self.maxNameLengthKey)
+        NotificationCenter.default.post(name: .preferencesChanged, object: nil)
+    }
+
+    @objc private func notificationToggleChanged(_ sender: NSButton) {
+        UserDefaults.standard.set(sender.state == .on, forKey: Self.notificationKey)
         NotificationCenter.default.post(name: .preferencesChanged, object: nil)
     }
 }
