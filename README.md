@@ -11,8 +11,10 @@
 - **点击直达宿主 app** —— 自动识别 session 跑在哪个终端/编辑器，点一下就能切过去继续工作。
 - **等待/运行中的项目名直接显示在菜单栏** —— 项目名贴在图标后面，不用展开菜单也能定位到该去哪儿。
 - **工作状态会呼吸** —— 绿色图标会有节奏地脉动，肉眼也能感知"还在跑"。
-- **零延迟响应** —— session 状态一变化，菜单栏立刻刷新；不会等你手动刷。
+- **零延迟响应** —— 基于文件监听（FSEventStream），session 状态一变化菜单栏立刻刷新。
 - **睡眠/唤醒自愈** —— 系统睡眠再唤醒后无需重启，状态自动恢复准确。
+- **桌面通知** —— 有 session 需要输入时弹出通知，点击通知直接跳转到对应窗口。
+- **配置面板** —— 可自定义通知开关、菜单栏显示样式、列表排序等。
 
 ## 状态指示
 
@@ -36,9 +38,15 @@ swift build
 # 直接运行
 swift run
 
-# 打包为 .app bundle
+# 打包为 .app bundle（ad-hoc 签名，支持桌面通知）
 ./scripts/build-app.sh
 open CCStatus.app
+
+# 多架构 release 构建（arm64 + x86_64）
+./scripts/build-release.sh
+
+# release 构建 + DMG 打包
+./scripts/build-release.sh --dmg
 ```
 
 ## 系统要求
@@ -46,6 +54,7 @@ open CCStatus.app
 - macOS 13 (Ventura) 及以上
 - Xcode Command Line Tools（提供 `swift` 和 `clang`）
 - [Claude Code CLI](https://docs.claude.com/claude-code) 已安装
+- 桌面通知功能需要以 .app bundle 方式运行（`swift run` 不支持通知）
 - 首次启动可能需要在「系统设置 → 隐私与安全性 → 辅助功能」中授权，用于切换宿主 app
 
 ## 许可
