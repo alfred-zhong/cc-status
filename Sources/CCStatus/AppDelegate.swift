@@ -58,8 +58,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             object: nil
         )
 
-        // 桌面通知
-        UNUserNotificationCenter.current().delegate = self
+        // 桌面通知（需要 .app bundle，swift run 模式下跳过）
+        if Bundle.main.bundleURL.pathExtension == "app" {
+            UNUserNotificationCenter.current().delegate = self
+        }
 
         setupStatusItem()
         poll()
@@ -269,6 +271,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Desktop Notifications
 
     private func fireNotification(for session: ClaudeSession) {
+        // swift run 模式下无 .app bundle，跳过通知
+        guard Bundle.main.bundleURL.pathExtension == "app" else { return }
         let content = UNMutableNotificationContent()
         content.title = "CCStatus"
         content.body = "\(session.projectName) — 等待输入"
@@ -380,8 +384,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func handlePreferencesChanged() {
-        // 桌面通知开启时请求权限
-        if UserDefaults.standard.bool(forKey: Self.notificationKey) {
+        // 桌面通知开启时请求权限（需要 .app bundle）
+        if UserDefaults.standard.bool(forKey: Self.notificationKey)
+            && Bundle.main.bundleURL.pathExtension == "app" {
             UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
         }
         updateMenu()
