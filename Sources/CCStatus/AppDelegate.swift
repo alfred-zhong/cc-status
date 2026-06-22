@@ -2,9 +2,8 @@ import AppKit
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
-    private let monitor = ClaudeMonitor()
+    private let reader = FileSessionReader()
     private let detector = HostAppDetector()
-    private var timer: Timer?
     private var animationTimer: Timer?
     private var animationStart: Date = Date()
     private var sessions: [ClaudeSession] = []
@@ -53,11 +52,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         setupStatusItem()
         poll()
-
-        // 兜底轮询：每 5 秒（已临时关闭，测试纯文件监听）
-        // timer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
-        //     self?.poll()
-        // }
 
         // 文件监听：sessions 目录变化时立即刷新
         startWatchingSessions()
@@ -138,7 +132,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Polling
 
     private func poll() {
-        let result = monitor.fetchSessions()
+        let result = reader.fetchSessions()
 
         switch result {
         case .success(let sessions):
@@ -172,7 +166,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let tintColor: NSColor
         let newState: IconState
 
-        if !monitor.isAvailable || lastError != nil {
+        if !reader.isAvailable || lastError != nil {
             // Claude not found or error - 灰色空心
             image = NSImage(systemSymbolName: "circle", accessibilityDescription: "CC Status")!
             tintColor = .systemGray
@@ -328,8 +322,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func quit() {
         animationTimer?.invalidate()
         animationTimer = nil
-        timer?.invalidate()
-        timer = nil
         fileWatcher?.stop()
         fileWatcher = nil
         debounceWorkItem?.cancel()
