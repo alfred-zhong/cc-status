@@ -61,6 +61,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // 桌面通知（需要 .app bundle，swift run 模式下跳过）
         if Bundle.main.bundleURL.pathExtension == "app" {
             UNUserNotificationCenter.current().delegate = self
+            // 首次启动时如果通知已开启，立即请求权限
+            if UserDefaults.standard.bool(forKey: Self.notificationKey) {
+                UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+            }
         }
 
         setupStatusItem()
@@ -273,6 +277,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func fireNotification(for session: ClaudeSession) {
         // swift run 模式下无 .app bundle，跳过通知
         guard Bundle.main.bundleURL.pathExtension == "app" else { return }
+
         let content = UNMutableNotificationContent()
         content.title = "CCStatus"
         content.body = "\(session.projectName) — 等待输入"
