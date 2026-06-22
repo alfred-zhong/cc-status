@@ -278,6 +278,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // swift run 模式下无 .app bundle，跳过通知
         guard Bundle.main.bundleURL.pathExtension == "app" else { return }
 
+        // 宿主 app 在前台时跳过通知（用户已经在看了）
+        if let hostBundleId = session.pid.flatMap({ detector.detect(forPid: $0)?.bundleId }),
+           let frontmostBundleId = NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
+           hostBundleId == frontmostBundleId {
+            return
+        }
+
         let content = UNMutableNotificationContent()
         content.title = "CCStatus"
         content.body = "\(session.projectName) — 等待输入"

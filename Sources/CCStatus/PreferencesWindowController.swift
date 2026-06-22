@@ -14,7 +14,7 @@ final class PreferencesWindowController: NSWindowController {
     private static let notificationKey = "desktopNotificationsEnabled"
     // SPM `swift run` 模式下读不到 Info.plist,回落此值
     // 改版本时同步改 Info.plist 的 CFBundleShortVersionString
-    private static let fallbackVersion = "0.1.2"
+    private static let fallbackVersion = "0.1.3"
 
     init() {
         let window = NSWindow(
@@ -43,7 +43,7 @@ final class PreferencesWindowController: NSWindowController {
         let notificationLabel = makeSectionLabel("通知")
 
         let notificationCheckbox = NSButton(
-            checkboxWithTitle: "桌面通知（session 等待输入时）",
+            checkboxWithTitle: "桌面通知（session 等待输入且应用处于后台时）",
             target: self,
             action: #selector(notificationToggleChanged(_:))
         )
