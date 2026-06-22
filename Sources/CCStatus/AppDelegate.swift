@@ -47,7 +47,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             Self.showWaitingNameKey: true,
             Self.showRunningNameKey: true,
             Self.maxNameLengthKey: 20,
-            Self.notificationKey: false,
+            Self.notificationKey: true,
         ])
 
         // 监听配置变更通知，触发菜单重新构建
