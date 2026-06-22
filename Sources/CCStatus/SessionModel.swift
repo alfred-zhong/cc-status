@@ -22,38 +22,38 @@ struct ClaudeSession: Codable {
         // 优先使用 state 字段（更全面）
         if let state = state {
             switch state {
-            case "working": return "工作中"
-            case "blocked": return "需要输入"
-            case "done": return "已完成"
-            case "failed": return "失败"
-            case "stopped": return "已停止"
+            case "working": return NSLocalizedString("工作中", comment: "")
+            case "blocked": return NSLocalizedString("需要输入", comment: "")
+            case "done": return NSLocalizedString("已完成", comment: "")
+            case "failed": return NSLocalizedString("失败", comment: "")
+            case "stopped": return NSLocalizedString("已停止", comment: "")
             default: return state
             }
         }
         // 回退到 status 字段
         if let status = status {
             switch status {
-            case "busy": return "工作中"
+            case "busy": return NSLocalizedString("工作中", comment: "")
             case "waiting":
-                if waitingFor == "dialog open" { return "浏览中" }
-                return waitingFor ?? "等待中"
-            case "idle": return "空闲"
+                if waitingFor == "dialog open" { return NSLocalizedString("浏览中", comment: "") }
+                return waitingFor ?? NSLocalizedString("等待中", comment: "")
+            case "idle": return NSLocalizedString("空闲", comment: "")
             default: return status
             }
         }
         // 不应该到这里，因为已过滤无 status 的会话
-        return status ?? state ?? "未知"
+        return status ?? state ?? NSLocalizedString("未知", comment: "")
     }
 
     var durationDisplay: String {
         let elapsed = Int(Date().timeIntervalSince1970 * 1000) - Int(startedAt)
         let seconds = elapsed / 1000
-        if seconds < 60 { return "\(seconds)秒" }
+        if seconds < 60 { return String(format: NSLocalizedString("%d秒", comment: ""), seconds) }
         let minutes = seconds / 60
-        if minutes < 60 { return "\(minutes)分钟" }
+        if minutes < 60 { return String(format: NSLocalizedString("%d分钟", comment: ""), minutes) }
         let hours = minutes / 60
         let remainMinutes = minutes % 60
-        return "\(hours)小时\(remainMinutes)分钟"
+        return String(format: NSLocalizedString("%d小时%d分钟", comment: ""), hours, remainMinutes)
     }
 
     /// waitingFor 为这些值时，不算"真正需要用户输入"，而是用户主动打开了 UI

@@ -99,6 +99,11 @@ for ARCH in "${FINAL_ARCHS[@]}"; do
            "$APP_BUNDLE/Contents/Resources/"
     fi
 
+    # Copy localization bundles (.lproj directories)
+    for lproj in "$PROJECT_DIR/Sources/$APP_NAME/Resources"/*.lproj; do
+        [ -d "$lproj" ] && cp -R "$lproj" "$APP_BUNDLE/Contents/Resources/"
+    done
+
     # 注入版本号
     /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" \
         "$APP_BUNDLE/Contents/Info.plist" 2>/dev/null || \

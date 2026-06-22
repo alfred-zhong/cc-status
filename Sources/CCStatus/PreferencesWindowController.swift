@@ -14,7 +14,7 @@ final class PreferencesWindowController: NSWindowController {
     private static let notificationKey = "desktopNotificationsEnabled"
     // SPM `swift run` 模式下读不到 Info.plist,回落此值
     // 改版本时同步改 Info.plist 的 CFBundleShortVersionString
-    private static let fallbackVersion = "0.1.3"
+    private static let fallbackVersion = "0.2.0"
 
     init() {
         let window = NSWindow(
@@ -23,7 +23,7 @@ final class PreferencesWindowController: NSWindowController {
             backing: .buffered,
             defer: false
         )
-        window.title = "CCStatus 偏好设置"
+        window.title = NSLocalizedString("CCStatus 偏好设置", comment: "")
         window.center()
         window.setFrameAutosaveName("CCStatusPreferencesWindow")  // 记忆位置
 
@@ -40,10 +40,10 @@ final class PreferencesWindowController: NSWindowController {
         }
 
         // — 通知 —
-        let notificationLabel = makeSectionLabel("通知")
+        let notificationLabel = makeSectionLabel(NSLocalizedString("通知", comment: ""))
 
         let notificationCheckbox = NSButton(
-            checkboxWithTitle: "桌面通知（session 等待输入且应用处于后台时）",
+            checkboxWithTitle: NSLocalizedString("桌面通知（session 等待输入且应用处于后台时）", comment: ""),
             target: self,
             action: #selector(notificationToggleChanged(_:))
         )
@@ -52,10 +52,10 @@ final class PreferencesWindowController: NSWindowController {
         window.contentView?.addSubview(notificationCheckbox)
 
         // — 菜单栏 —
-        let menuBarLabel = makeSectionLabel("菜单栏")
+        let menuBarLabel = makeSectionLabel(NSLocalizedString("菜单栏", comment: ""))
 
         let waitingNameCheckbox = NSButton(
-            checkboxWithTitle: "显示等待中 session 名称",
+            checkboxWithTitle: NSLocalizedString("显示等待中 session 名称", comment: ""),
             target: self,
             action: #selector(waitingNameChanged(_:))
         )
@@ -64,7 +64,7 @@ final class PreferencesWindowController: NSWindowController {
         window.contentView?.addSubview(waitingNameCheckbox)
 
         let runningNameCheckbox = NSButton(
-            checkboxWithTitle: "显示运行中 session 名称",
+            checkboxWithTitle: NSLocalizedString("显示运行中 session 名称", comment: ""),
             target: self,
             action: #selector(runningNameChanged(_:))
         )
@@ -72,7 +72,7 @@ final class PreferencesWindowController: NSWindowController {
         runningNameCheckbox.translatesAutoresizingMaskIntoConstraints = false
         window.contentView?.addSubview(runningNameCheckbox)
 
-        let maxLengthLabel = NSTextField(labelWithString: "session 名最大长度:")
+        let maxLengthLabel = NSTextField(labelWithString: NSLocalizedString("session 名最大长度:", comment: ""))
         maxLengthLabel.font = NSFont.systemFont(ofSize: 13, weight: .regular)
         maxLengthLabel.translatesAutoresizingMaskIntoConstraints = false
         window.contentView?.addSubview(maxLengthLabel)
@@ -80,7 +80,7 @@ final class PreferencesWindowController: NSWindowController {
         let maxLengthPopup = NSPopUpButton()
         maxLengthPopup.translatesAutoresizingMaskIntoConstraints = false
         let popupItems: [(String, Int)] = [
-            ("不限制", 0),
+            (NSLocalizedString("不限制", comment: ""), 0),
             ("10", 10),
             ("15", 15),
             ("20", 20),
@@ -98,17 +98,12 @@ final class PreferencesWindowController: NSWindowController {
         maxLengthPopup.action = #selector(maxNameLengthChanged(_:))
         window.contentView?.addSubview(maxLengthPopup)
 
-        let maxLengthHint = NSTextField(labelWithString: "(0 为不限制)")
-        maxLengthHint.font = NSFont.systemFont(ofSize: 11, weight: .regular)
-        maxLengthHint.textColor = NSColor.secondaryLabelColor
-        maxLengthHint.translatesAutoresizingMaskIntoConstraints = false
-        window.contentView?.addSubview(maxLengthHint)
 
         // — 列表 —
-        let listLabel = makeSectionLabel("列表")
+        let listLabel = makeSectionLabel(NSLocalizedString("列表", comment: ""))
 
         let autoSortCheckbox = NSButton(
-            checkboxWithTitle: "自动排序 (等待中 → 工作中 → 空闲)",
+            checkboxWithTitle: NSLocalizedString("自动排序 (等待中 → 工作中 → 空闲)", comment: ""),
             target: self,
             action: #selector(autoSortChanged(_:))
         )
@@ -153,9 +148,6 @@ final class PreferencesWindowController: NSWindowController {
             maxLengthPopup.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor, constant: 180),
             maxLengthPopup.topAnchor.constraint(equalTo: runningNameCheckbox.bottomAnchor, constant: 8),
 
-            maxLengthHint.leadingAnchor.constraint(equalTo: maxLengthPopup.trailingAnchor, constant: 8),
-            maxLengthHint.centerYAnchor.constraint(equalTo: maxLengthPopup.centerYAnchor),
-            maxLengthHint.trailingAnchor.constraint(lessThanOrEqualTo: window.contentView!.trailingAnchor, constant: -20),
 
             // 列表
             listLabel.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor, constant: 20),

@@ -27,6 +27,11 @@ if [ -f "$PROJECT_DIR/Sources/$APP_NAME/Resources/AppIcon.icns" ]; then
     cp "$PROJECT_DIR/Sources/$APP_NAME/Resources/AppIcon.icns" "$APP_BUNDLE/Contents/Resources/"
 fi
 
+# Copy localization bundles (.lproj directories)
+for lproj in "$PROJECT_DIR/Sources/$APP_NAME/Resources"/*.lproj; do
+    [ -d "$lproj" ] && cp -R "$lproj" "$APP_BUNDLE/Contents/Resources/"
+done
+
 # Ad-hoc 签名（macOS 通知等系统功能需要至少 ad-hoc 签名）
 codesign --force --sign - "$APP_BUNDLE"
 

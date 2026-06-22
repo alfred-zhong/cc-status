@@ -65,9 +65,9 @@ enum MonitorError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .processError(let msg):
-            return "文件读取错误: \(msg)"
+            return String(format: NSLocalizedString("文件读取错误: %@", comment: ""), msg)
         case .directoryAccessError(let msg):
-            return "目录访问错误: \(msg)"
+            return String(format: NSLocalizedString("目录访问错误: %@", comment: ""), msg)
         }
     }
 }

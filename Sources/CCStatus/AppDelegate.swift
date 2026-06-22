@@ -287,7 +287,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         let content = UNMutableNotificationContent()
         content.title = "CCStatus"
-        content.body = "\(session.projectName) — 等待输入"
+        content.body = String(format: NSLocalizedString("%@ — 等待输入", comment: ""), session.projectName)
         content.sound = .default
 
         // 附带 session 信息，点击时用于跳转
@@ -313,7 +313,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             item.isEnabled = false
             menu.addItem(item)
         } else if sessions.isEmpty {
-            let item = NSMenuItem(title: "无活跃 session", action: nil, keyEquivalent: "")
+            let item = NSMenuItem(title: NSLocalizedString("无活跃 session", comment: ""), action: nil, keyEquivalent: "")
             item.isEnabled = false
             menu.addItem(item)
         } else {
@@ -333,7 +333,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
                 // 查找宿主 app;找不到就显示"未知"且不可点击
                 let hostApp = session.pid.flatMap { detector.detect(forPid: $0) }
-                let hostSegment = hostApp.map { " (\($0.shortName))" } ?? " (未知)"
+                let hostSegment = hostApp.map { " (\($0.shortName))" } ?? " (\(NSLocalizedString("未知", comment: "")))"
 
                 let restText = " \(session.projectName)\(hostSegment) — \(session.statusDisplay) (\(session.durationDisplay))"
                 let attributedTitle = NSMutableAttributedString()
@@ -358,11 +358,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
-        let preferencesItem = NSMenuItem(title: "配置", action: #selector(showPreferences), keyEquivalent: ",")
+        let preferencesItem = NSMenuItem(title: NSLocalizedString("配置", comment: ""), action: #selector(showPreferences), keyEquivalent: ",")
         preferencesItem.target = self
         menu.addItem(preferencesItem)
 
-        let quitItem = NSMenuItem(title: "退出", action: #selector(quit), keyEquivalent: "q")
+        let quitItem = NSMenuItem(title: NSLocalizedString("退出", comment: ""), action: #selector(quit), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
 

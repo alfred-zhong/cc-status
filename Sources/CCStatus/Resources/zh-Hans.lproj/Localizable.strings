@@ -1,0 +1,40 @@
+/* CCStatus 简体中文本地化 */
+
+/* SessionModel — statusDisplay */
+"工作中" = "工作中";
+"需要输入" = "需要输入";
+"已完成" = "已完成";
+"失败" = "失败";
+"已停止" = "已停止";
+"浏览中" = "浏览中";
+"等待中" = "等待中";
+"空闲" = "空闲";
+"未知" = "未知";
+
+/* SessionModel — durationDisplay */
+"%d秒" = "%d秒";
+"%d分钟" = "%d分钟";
+"%d小时%d分钟" = "%d小时%d分钟";
+
+/* AppDelegate — notifications & menu */
+"%@ — 等待输入" = "%@ — 等待输入";
+"无活跃 session" = "无活跃 session";
+"(未知)" = "(未知)";
+"配置" = "配置";
+"退出" = "退出";
+
+/* PreferencesWindowController */
+"CCStatus 偏好设置" = "CCStatus 偏好设置";
+"通知" = "通知";
+"桌面通知（session 等待输入且应用处于后台时）" = "桌面通知（session 等待输入且应用处于后台时）";
+"菜单栏" = "菜单栏";
+"显示等待中 session 名称" = "显示等待中 session 名称";
+"显示运行中 session 名称" = "显示运行中 session 名称";
+"session 名最大长度:" = "session 名最大长度:";
+"不限制" = "不限制";
+"列表" = "列表";
+"自动排序 (等待中 → 工作中 → 空闲)" = "自动排序 (等待中 → 工作中 → 空闲)";
+
+/* FileSessionReader — error messages */
+"文件读取错误: %@" = "文件读取错误: %@";
+"目录访问错误: %@" = "目录访问错误: %@";

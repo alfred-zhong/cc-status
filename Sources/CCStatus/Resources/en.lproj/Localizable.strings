@@ -1,0 +1,40 @@
+/* CCStatus English localization */
+
+/* SessionModel — statusDisplay */
+"工作中" = "Working";
+"需要输入" = "Needs Input";
+"已完成" = "Done";
+"失败" = "Failed";
+"已停止" = "Stopped";
+"浏览中" = "Browsing";
+"等待中" = "Waiting";
+"空闲" = "Idle";
+"未知" = "Unknown";
+
+/* SessionModel — durationDisplay */
+"%d秒" = "%d sec";
+"%d分钟" = "%d min";
+"%d小时%d分钟" = "%d hr %d min";
+
+/* AppDelegate — notifications & menu */
+"%@ — 等待输入" = "%@ — awaiting input";
+"无活跃 session" = "No active sessions";
+"(未知)" = "(Unknown)";
+"配置" = "Preferences...";
+"退出" = "Quit";
+
+/* PreferencesWindowController */
+"CCStatus 偏好设置" = "CCStatus Preferences";
+"通知" = "Notifications";
+"桌面通知（session 等待输入且应用处于后台时）" = "Desktop notifications (when session awaits input and app is in background)";
+"菜单栏" = "Menu Bar";
+"显示等待中 session 名称" = "Show waiting session name";
+"显示运行中 session 名称" = "Show running session name";
+"session 名最大长度:" = "Max session name length:";
+"不限制" = "Unlimited";
+"列表" = "List";
+"自动排序 (等待中 → 工作中 → 空闲)" = "Auto-sort (waiting → working → idle)";
+
+/* FileSessionReader — error messages */
+"文件读取错误: %@" = "File read error: %@";
+"目录访问错误: %@" = "Directory access error: %@";
