@@ -290,9 +290,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         content.body = String(format: NSLocalizedString("%@ — 等待输入", comment: ""), session.projectName)
         content.sound = .default
 
-        // 附带 session 信息，点击时用于跳转
+        // 附带 session 信息，点击时用于跳转到具体项目窗口
         if let bundleId = session.pid.flatMap({ detector.detect(forPid: $0)?.bundleId }) {
-            content.userInfo = ["hostBundleId": bundleId]
+            content.userInfo = ["hostBundleId": bundleId, "hostCwd": session.cwd]
         }
 
         let request = UNNotificationRequest(
@@ -348,7 +348,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 if let hostApp {
                     item.target = self
                     item.action = #selector(activateSession(_:))
-                    item.representedObject = hostApp.bundleId
+                    item.representedObject = SessionTarget(bundleId: hostApp.bundleId, cwd: session.cwd)
                 } else {
                     item.isEnabled = false
                 }
@@ -372,8 +372,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Actions
 
     @objc private func activateSession(_ sender: NSMenuItem) {
-        guard let bundleId = sender.representedObject as? String else { return }
-        AppActivator.activate(bundleId: bundleId)
+        guard let target = sender.representedObject as? SessionTarget else { return }
+        AppActivator.activate(bundleId: target.bundleId, cwd: target.cwd)
     }
 
     @objc private func quit() {
@@ -470,7 +470,8 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
     ) {
         let userInfo = response.notification.request.content.userInfo
         if let bundleId = userInfo["hostBundleId"] as? String {
-            AppActivator.activate(bundleId: bundleId)
+            let cwd = userInfo["hostCwd"] as? String
+            AppActivator.activate(bundleId: bundleId, cwd: cwd)
         }
         completionHandler()
     }
