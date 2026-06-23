@@ -8,6 +8,7 @@
 "已停止" = "Stopped";
 "浏览中" = "Browsing";
 "等待中" = "Waiting";
+"运行中" = "Running";
 "空闲" = "Idle";
 "未知" = "Unknown";
 
@@ -28,6 +29,7 @@
 "通知" = "Notifications";
 "桌面通知（session 等待输入且应用处于后台时）" = "Desktop notifications (when session awaits input and app is in background)";
 "菜单栏" = "Menu Bar";
+"显示 session 名称:" = "Show session name:";
 "显示等待中 session 名称" = "Show waiting session name";
 "显示运行中 session 名称" = "Show running session name";
 "session 名最大长度:" = "Max session name length:";

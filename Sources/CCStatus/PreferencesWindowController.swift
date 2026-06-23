@@ -3,22 +3,23 @@ import AppKit
 /// 配置面板窗口控制器。
 /// 通过菜单栏"配置"项打开,配置项分三组:
 /// - 通知: desktopNotificationsEnabled
-/// - 菜单栏: showWaitingNameInMenuBar / showRunningNameInMenuBar / maxNameLengthInMenuBar
+/// - 菜单栏: showWaitingNameInMenuBar / showRunningNameInMenuBar / showIdleNameInMenuBar / maxNameLengthInMenuBar
 /// - 列表: autoSortSessions
 /// 设计原则: 极简自用,后续新增配置项只需往 NSView 里加控件,无需重构。
 final class PreferencesWindowController: NSWindowController {
     private static let autoSortKey = "autoSortSessions"
     private static let showWaitingNameKey = "showWaitingNameInMenuBar"
     private static let showRunningNameKey = "showRunningNameInMenuBar"
+    private static let showIdleNameKey = "showIdleNameInMenuBar"
     private static let maxNameLengthKey = "maxNameLengthInMenuBar"
     private static let notificationKey = "desktopNotificationsEnabled"
     // SPM `swift run` 模式下读不到 Info.plist,回落此值
     // 改版本时同步改 Info.plist 的 CFBundleShortVersionString
-    private static let fallbackVersion = "0.2.0"
+    private static let fallbackVersion = "0.2.1"
 
     init() {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 400, height: 320),
+            contentRect: NSRect(x: 0, y: 0, width: 420, height: 280),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -54,23 +55,82 @@ final class PreferencesWindowController: NSWindowController {
         // — 菜单栏 —
         let menuBarLabel = makeSectionLabel(NSLocalizedString("菜单栏", comment: ""))
 
-        let waitingNameCheckbox = NSButton(
-            checkboxWithTitle: NSLocalizedString("显示等待中 session 名称", comment: ""),
-            target: self,
-            action: #selector(waitingNameChanged(_:))
-        )
-        waitingNameCheckbox.state = UserDefaults.standard.bool(forKey: Self.showWaitingNameKey) ? .on : .off
-        waitingNameCheckbox.translatesAutoresizingMaskIntoConstraints = false
-        window.contentView?.addSubview(waitingNameCheckbox)
+        // 辅助函数：创建带图标的开关单元
+        func makeStateToggle(
+            tag: Int, stateText: String, dotColor: NSColor, key: String
+        ) -> NSStackView {
+            let checkbox = NSButton()
+            checkbox.setButtonType(.switch)
+            checkbox.state = UserDefaults.standard.bool(forKey: key) ? .on : .off
+            checkbox.target = self
+            checkbox.action = #selector(menuBarNameToggleChanged(_:))
+            checkbox.tag = tag
+            checkbox.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                checkbox.widthAnchor.constraint(equalToConstant: 20),
+                checkbox.heightAnchor.constraint(equalToConstant: 20),
+            ])
 
-        let runningNameCheckbox = NSButton(
-            checkboxWithTitle: NSLocalizedString("显示运行中 session 名称", comment: ""),
-            target: self,
-            action: #selector(runningNameChanged(_:))
+            let dotImage = NSImage(
+                systemSymbolName: "circle.fill",
+                accessibilityDescription: stateText
+            )
+            dotImage?.isTemplate = true
+            let dotView = NSImageView(image: dotImage!)
+            dotView.contentTintColor = dotColor
+            dotView.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                dotView.widthAnchor.constraint(equalToConstant: 12),
+                dotView.heightAnchor.constraint(equalToConstant: 12),
+            ])
+
+            let label = NSTextField(labelWithString: stateText)
+            label.font = NSFont.systemFont(ofSize: 13, weight: .regular)
+            label.setContentCompressionResistancePriority(.defaultHigh, for: .horizontal)
+            label.translatesAutoresizingMaskIntoConstraints = false
+
+            let unit = NSStackView(views: [checkbox, dotView, label])
+            unit.orientation = .horizontal
+            unit.alignment = .centerY
+            unit.spacing = 4
+            unit.translatesAutoresizingMaskIntoConstraints = false
+            return unit
+        }
+
+        let waitingUnit = makeStateToggle(
+            tag: 0,
+            stateText: NSLocalizedString("等待中", comment: ""),
+            dotColor: .systemOrange,
+            key: Self.showWaitingNameKey
         )
-        runningNameCheckbox.state = UserDefaults.standard.bool(forKey: Self.showRunningNameKey) ? .on : .off
-        runningNameCheckbox.translatesAutoresizingMaskIntoConstraints = false
-        window.contentView?.addSubview(runningNameCheckbox)
+        let runningUnit = makeStateToggle(
+            tag: 1,
+            stateText: NSLocalizedString("运行中", comment: ""),
+            dotColor: .systemGreen,
+            key: Self.showRunningNameKey
+        )
+        let idleUnit = makeStateToggle(
+            tag: 2,
+            stateText: NSLocalizedString("空闲", comment: ""),
+            dotColor: .systemGray,
+            key: Self.showIdleNameKey
+        )
+
+        let nameToggleLabel = NSTextField(labelWithString: NSLocalizedString("显示 session 名称:", comment: ""))
+        nameToggleLabel.font = NSFont.systemFont(ofSize: 13, weight: .regular)
+
+        let nameTogglesRow = NSStackView(views: [waitingUnit, runningUnit, idleUnit])
+        nameTogglesRow.orientation = .horizontal
+        nameTogglesRow.distribution = .equalSpacing
+        nameTogglesRow.spacing = 8
+
+        let nameToggleGroup = NSStackView(views: [nameToggleLabel, nameTogglesRow])
+        nameToggleGroup.orientation = .horizontal
+        nameToggleGroup.alignment = .centerY
+        nameToggleGroup.spacing = 12
+        nameToggleGroup.distribution = .fill
+        nameToggleGroup.translatesAutoresizingMaskIntoConstraints = false
+        window.contentView?.addSubview(nameToggleGroup)
 
         let maxLengthLabel = NSTextField(labelWithString: NSLocalizedString("session 名最大长度:", comment: ""))
         maxLengthLabel.font = NSFont.systemFont(ofSize: 13, weight: .regular)
@@ -133,20 +193,16 @@ final class PreferencesWindowController: NSWindowController {
             menuBarLabel.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor, constant: 20),
             menuBarLabel.topAnchor.constraint(equalTo: notificationCheckbox.bottomAnchor, constant: 16),
 
-            waitingNameCheckbox.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor, constant: 20),
-            waitingNameCheckbox.topAnchor.constraint(equalTo: menuBarLabel.bottomAnchor, constant: 6),
-            waitingNameCheckbox.trailingAnchor.constraint(lessThanOrEqualTo: window.contentView!.trailingAnchor, constant: -20),
-
-            runningNameCheckbox.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor, constant: 20),
-            runningNameCheckbox.topAnchor.constraint(equalTo: waitingNameCheckbox.bottomAnchor, constant: 8),
-            runningNameCheckbox.trailingAnchor.constraint(lessThanOrEqualTo: window.contentView!.trailingAnchor, constant: -20),
+            nameToggleGroup.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor, constant: 20),
+            nameToggleGroup.topAnchor.constraint(equalTo: menuBarLabel.bottomAnchor, constant: 6),
+            nameToggleGroup.trailingAnchor.constraint(lessThanOrEqualTo: window.contentView!.trailingAnchor, constant: -20),
 
             maxLengthLabel.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor, constant: 20),
             maxLengthLabel.centerYAnchor.constraint(equalTo: maxLengthPopup.centerYAnchor),
             maxLengthLabel.trailingAnchor.constraint(lessThanOrEqualTo: maxLengthPopup.leadingAnchor, constant: -8),
 
             maxLengthPopup.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor, constant: 180),
-            maxLengthPopup.topAnchor.constraint(equalTo: runningNameCheckbox.bottomAnchor, constant: 8),
+            maxLengthPopup.topAnchor.constraint(equalTo: nameToggleGroup.bottomAnchor, constant: 8),
 
 
             // 列表
@@ -170,13 +226,14 @@ final class PreferencesWindowController: NSWindowController {
         NotificationCenter.default.post(name: .preferencesChanged, object: nil)
     }
 
-    @objc private func waitingNameChanged(_ sender: NSButton) {
-        UserDefaults.standard.set(sender.state == .on, forKey: Self.showWaitingNameKey)
-        NotificationCenter.default.post(name: .preferencesChanged, object: nil)
-    }
-
-    @objc private func runningNameChanged(_ sender: NSButton) {
-        UserDefaults.standard.set(sender.state == .on, forKey: Self.showRunningNameKey)
+    @objc private func menuBarNameToggleChanged(_ sender: NSButton) {
+        let key: String
+        switch sender.tag {
+        case 1:  key = Self.showRunningNameKey
+        case 2:  key = Self.showIdleNameKey
+        default: key = Self.showWaitingNameKey  // tag=0
+        }
+        UserDefaults.standard.set(sender.state == .on, forKey: key)
         NotificationCenter.default.post(name: .preferencesChanged, object: nil)
     }
 

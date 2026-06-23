@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-CCStatus 是一个原生 macOS 菜单栏应用，用于实时监控 Claude Code 的运行状态。通过监听 `~/.claude/sessions/` 目录下的 JSON 文件变化，在菜单栏显示当前所有 Claude Code 会话的状态图标（绿色=全部空闲，橙色=有会话忙碌，灰色=未检测到）。
+CCStatus 是一个原生 macOS 菜单栏应用，用于实时监控 Claude Code 的运行状态。通过监听 `~/.claude/sessions/` 目录下的 JSON 文件变化，在菜单栏显示当前所有 Claude Code 会话的状态图标和项目名称。
 
 ## 常用命令
 
@@ -36,7 +36,7 @@ open CCStatus.app              # 打开打包后的应用
 - `HostApp.swift` — `HostApp` 结构体定义和已知终端/IDE 白名单（Kitty、iTerm、Terminal、VSCode、Cursor、Zed、Ghostty、Warp、Alacritty）
 - `HostAppDetector.swift` — 从 PID 向上遍历进程树识别宿主应用，支持 tmux，带缓存和线程安全
 - `AppActivator.swift` — 三级策略激活宿主应用到前台（NSRunningApplication → NSAppleScript → System Events）
-- `PreferencesWindowController.swift` — 纯代码 NSWindow 配置面板（通知、菜单栏、列表三组设置）
+- `PreferencesWindowController.swift` — 纯代码 NSWindow 配置面板（通知、菜单栏、列表三组设置），三个状态开关水平排列带 SF Symbol 图标
 - `Info.plist` — `LSUIElement=true`（无 Dock 图标，仅菜单栏显示）
 
 ## 关键设计
@@ -45,7 +45,7 @@ open CCStatus.app              # 打开打包后的应用
 - **桌面通知**：追踪每个 session 的 `lastSeenBlocked` 状态，仅在从非 blocked 转为 blocked 且宿主应用不在前台时触发通知。仅在 .app bundle 模式下生效（`swift run` 时跳过）
 - **"dialog open" 排除**：`status` 为 `waiting` 且 `waitingFor` 包含 "dialog open" 时不视为 blocked，避免浏览菜单时误触发通知
 - **菜单栏图标五态**：error（灰色空心）、empty（灰色空心）、blocked（橙色实心）、working（绿色实心+呼吸动画）、idle（灰色实心）
-- **UserDefaults 配置项**：`autoSortSessions`、`showWaitingNameInMenuBar`、`showRunningNameInMenuBar`、`maxNameLengthInMenuBar`、`desktopNotificationsEnabled`
+- **UserDefaults 配置项**：`autoSortSessions`、`showWaitingNameInMenuBar`、`showRunningNameInMenuBar`、`showIdleNameInMenuBar`、`maxNameLengthInMenuBar`、`desktopNotificationsEnabled`
 
 ## 注意事项
 

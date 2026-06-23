@@ -22,6 +22,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private static let autoSortKey = "autoSortSessions"
     private static let showWaitingNameKey = "showWaitingNameInMenuBar"
     private static let showRunningNameKey = "showRunningNameInMenuBar"
+    private static let showIdleNameKey = "showIdleNameInMenuBar"
     private static let maxNameLengthKey = "maxNameLengthInMenuBar"
     private static let notificationKey = "desktopNotificationsEnabled"
 
@@ -46,6 +47,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             Self.autoSortKey: true,
             Self.showWaitingNameKey: true,
             Self.showRunningNameKey: true,
+            Self.showIdleNameKey: true,
             Self.maxNameLengthKey: 20,
             Self.notificationKey: true,
         ])
@@ -219,7 +221,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         tintedImage.isTemplate = false
         button.image = tintedImage
 
-        // 等待中 / 运行中的 session：把项目名追加到图标后面（受各自 toggle 控制 + 截断配置）
+        // 等待中 / 运行中 / 空闲的 session：把项目名追加到图标后面（受各自 toggle 控制 + 截断配置）
         if newState == .blocked {
             if UserDefaults.standard.bool(forKey: Self.showWaitingNameKey) {
                 let blockedNames = sortedForDisplay(sessions).filter { $0.isBlocked }
@@ -231,6 +233,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             if UserDefaults.standard.bool(forKey: Self.showRunningNameKey) {
                 let workingNames = sortedForDisplay(sessions).filter { $0.isBusy }
                 button.title = truncateForMenuBar(workingNames.first?.projectName ?? "")
+            } else {
+                button.title = ""
+            }
+        } else if newState == .idle {
+            if UserDefaults.standard.bool(forKey: Self.showIdleNameKey) {
+                let idleSessions = sessions.filter { !$0.isBusy && !$0.isBlocked }
+                button.title = truncateForMenuBar(idleSessions.first?.projectName ?? "")
             } else {
                 button.title = ""
             }
