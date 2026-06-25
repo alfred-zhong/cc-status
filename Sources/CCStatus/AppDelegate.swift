@@ -17,6 +17,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private let debounceQueue = DispatchQueue(label: "ccstatus.debounce", qos: .utility)
     private let sessionsDir = NSHomeDirectory() + "/.claude/sessions"
 
+    // 低频轮询：vscode session 的"工作中"状态需要通过 jsonl mtime 推断，
+    // 而 jsonl 不在 sessionsDir 下，FSEvent 收不到。靠 timer 兜底刷新。
+    private var pollTimer: Timer?
+
     // 配置面板
     private lazy var preferencesWindow: PreferencesWindowController = PreferencesWindowController()
     private static let autoSortKey = "autoSortSessions"
@@ -74,6 +78,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // 文件监听：sessions 目录变化时立即刷新
         startWatchingSessions()
+
+        // 兜底轮询：每 5 秒刷新一次（主要为了刷新 vscode session 的 mtime 推断）
+        pollTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+            self?.poll()
+        }
 
         // 监听系统睡眠/唤醒，重启监听器避免失效
         NSWorkspace.shared.notificationCenter.addObserver(
@@ -301,7 +310,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // 附带 session 信息，点击时用于跳转到具体项目窗口
         if let bundleId = session.pid.flatMap({ detector.detect(forPid: $0)?.bundleId }) {
-            content.userInfo = ["hostBundleId": bundleId, "hostCwd": session.cwd]
+            var info: [String: Any] = ["hostBundleId": bundleId, "hostCwd": session.cwd]
+            if let pid = session.pid { info["hostPid"] = pid }
+            content.userInfo = info
         }
 
         let request = UNNotificationRequest(
@@ -357,7 +368,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 if let hostApp {
                     item.target = self
                     item.action = #selector(activateSession(_:))
-                    item.representedObject = SessionTarget(bundleId: hostApp.bundleId, cwd: session.cwd)
+                    item.representedObject = SessionTarget(bundleId: hostApp.bundleId, cwd: session.cwd, pid: session.pid)
                 } else {
                     item.isEnabled = false
                 }
@@ -382,12 +393,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func activateSession(_ sender: NSMenuItem) {
         guard let target = sender.representedObject as? SessionTarget else { return }
-        AppActivator.activate(bundleId: target.bundleId, cwd: target.cwd)
+        AppActivator.activate(bundleId: target.bundleId, cwd: target.cwd, pid: target.pid)
     }
 
     @objc private func quit() {
         animationTimer?.invalidate()
         animationTimer = nil
+        pollTimer?.invalidate()
+        pollTimer = nil
         fileWatcher?.stop()
         fileWatcher = nil
         debounceWorkItem?.cancel()
@@ -480,7 +493,8 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         let userInfo = response.notification.request.content.userInfo
         if let bundleId = userInfo["hostBundleId"] as? String {
             let cwd = userInfo["hostCwd"] as? String
-            AppActivator.activate(bundleId: bundleId, cwd: cwd)
+            let pid = userInfo["hostPid"] as? Int
+            AppActivator.activate(bundleId: bundleId, cwd: cwd, pid: pid)
         }
         completionHandler()
     }

@@ -22,6 +22,8 @@
     <string>13.0</string>
     <key>LSUIElement</key>
     <true/>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>CCStatus 需要控制 iTerm / VSCode 等宿主应用，以便点击菜单时切换到对应窗口或 session。</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>CFBundleIconName</key>
