@@ -11,14 +11,30 @@ struct ClaudeSession: Codable {
     let id: String?
     let name: String?
     let waitingFor: String?
+    let entrypoint: String?
+
+    /// 对于 claude-vscode 类型的会话，session 文件本身不写 status/state，
+    /// 由 FileSessionReader 通过 ~/.claude/projects/<proj>/<sessionId>.jsonl 的 mtime 推断后注入。
+    /// nil 表示未推断（非 vscode 会话），true=最近活动，false=较久未活动。
+    var vscodeInferredBusy: Bool? = nil
+
+    private enum CodingKeys: String, CodingKey {
+        case pid, cwd, kind, startedAt, sessionId, status, state, id, name, waitingFor, entrypoint
+    }
 
     var displayId: String { id ?? sessionId ?? "\(pid ?? 0)" }
+
+    var isVSCodeEntrypoint: Bool { entrypoint == "claude-vscode" }
 
     var projectName: String {
         URL(fileURLWithPath: cwd).lastPathComponent
     }
 
     var statusDisplay: String {
+        // claude-vscode 会话：用 jsonl mtime 推断的活动态优先（status/state 在此模式下不存在）
+        if isVSCodeEntrypoint, let busy = vscodeInferredBusy {
+            return busy ? NSLocalizedString("工作中", comment: "") : NSLocalizedString("空闲", comment: "")
+        }
         // 优先使用 state 字段（更全面）
         if let state = state {
             switch state {
@@ -41,8 +57,8 @@ struct ClaudeSession: Codable {
             default: return status
             }
         }
-        // 不应该到这里，因为已过滤无 status 的会话
-        return status ?? state ?? NSLocalizedString("未知", comment: "")
+        // 无 status/state 的 session（如 claude-vscode entrypoint）当作空闲处理
+        return NSLocalizedString("空闲", comment: "")
     }
 
     var durationDisplay: String {
@@ -60,6 +76,10 @@ struct ClaudeSession: Codable {
     private static let ignorableWaitingReasons: Set<String> = ["dialog open"]
 
     var isBusy: Bool {
+        // claude-vscode：mtime 推断
+        if isVSCodeEntrypoint, let busy = vscodeInferredBusy {
+            return busy
+        }
         // 使用 state 字段判断
         if let state = state {
             return state == "working" || state == "blocked"
